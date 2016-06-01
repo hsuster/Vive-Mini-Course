@@ -1,11 +1,14 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System;
 
 [RequireComponent(typeof(SteamVR_TrackedObject))]
 public class PickupParent : MonoBehaviour {
 
     SteamVR_TrackedObject trackedObj;
-    SteamVR_Controller.Device device;
+    public SteamVR_Controller.Device device;
+
+    public Transform sphere;
 
     void Awake () {
         trackedObj = GetComponent<SteamVR_TrackedObject>();
@@ -13,7 +16,7 @@ public class PickupParent : MonoBehaviour {
 	
     // Called for every physics step (fixed interval between calls)
 	void FixedUpdate () {
-        SteamVR_Controller.Device device = SteamVR_Controller.Input((int)trackedObj.index);
+        device = SteamVR_Controller.Input((int)trackedObj.index);
         if (device.GetTouch(SteamVR_Controller.ButtonMask.Trigger))
         {
             Debug.Log("You are holding 'Touch' on the Trigger");
@@ -43,5 +46,30 @@ public class PickupParent : MonoBehaviour {
         {
             Debug.Log("You have activated 'Press Up' on the Trigger");
         }
+    }
+
+    void OnTriggerStay(Collider col)
+    {
+        Debug.Log("You have collided with " + col.name + " and activated OnTriggerStay");
+        if (device.GetTouch(SteamVR_Controller.ButtonMask.Trigger))
+        {
+            Debug.Log("You have collided with " + col.name);
+            col.attachedRigidbody.isKinematic = true;
+            col.gameObject.transform.SetParent(gameObject.transform);
+        }
+        if (device.GetTouchUp(SteamVR_Controller.ButtonMask.Trigger))
+        {
+            Debug.Log("You have released Touch while colliding with " + col.name + " while holding down Touch");
+            col.gameObject.transform.SetParent(null);
+            col.attachedRigidbody.isKinematic = false;
+
+            tossObject(col.attachedRigidbody);
+        }
+    }
+
+    void tossObject(Rigidbody rigidBody)
+    {
+        rigidBody.velocity = device.velocity;
+        rigidBody.angularVelocity = device.angularVelocity;
     }
 }
